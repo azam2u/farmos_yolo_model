@@ -1,38 +1,49 @@
-# FarmOS Plant Detector
+# FarmOS Plant Classifier
 
-This repository contains a custom trained YOLO11n object detection model for identifying 5 specific plant species in real-time camera feeds. The model was trained on a dataset of images cleanly segmented using a dual-pipeline of U-2-Net (rembg) and SAM3.
+This repository contains a YOLOv8 Nano classification model trained to recognize 14 different plant species. The pipeline includes scripts for segmenting raw data, balancing the dataset, training the model, and running live inference.
 
-## Supported Classes:
-- JapaneseFraxinus
-- Kuroganemochi
-- Shirakashi
-- camellia
-- ichigonoki
+## Features
+- **14-Class Plant Recognition**: Accurately classifies species such as `JapaneseFraxinus`, `sakura`, `camellia_yabutsubaki`, and `Kuroganemochi`.
+- **Live Webcam Inference**: Built-in support for real-time predictions via webcam.
+- **Data Pipeline**: Automated tools to extract instances using SAM3 PCS, pool them by hierarchy (Whole Plant > Buds > Leaf), and perfectly balance classes.
 
-## Setup
+## The Model
+The model (`weights/yolov8n_plant_classifier_22Apr.pt`) was trained for 100 epochs on a dynamically balanced dataset of 500 images per class (80% train / 20% val). 
+- **Architecture**: YOLOv8 Nano (`yolov8n-cls.pt`)
+- **Input Size**: 224x224
+- **Performance**: Achieved 100% confidence across validation subsets.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/azam2u/farmos_yolo_model.git
-   cd farmos_yolo_model
-   ```
+## Setup & Installation
+It is highly recommended to run this inside a Conda environment with `ultralytics` installed.
 
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## Running Real-Time Inference
-
-To run the live webcam inference script:
 ```bash
-python realtime_yolo.py
+conda create -n imagerecog python=3.10
+conda activate imagerecog
+pip install ultralytics opencv-python
 ```
 
-The script will attempt to open your default webcam (`/dev/video0`) and draw bounding boxes around any of the 5 plant species it detects in real-time. Press `q` while the video window is focused to exit.
+## How to Run Inference
 
-## Model Details
-- Architecture: YOLO11n
-- Input Size: 224x224
-- Training Epochs: 10
-- Validation mAP50: 0.995
+We provide a simple script to run inference on either a single static image or via a live camera feed.
+
+### 1. Live Webcam Inference
+To open your camera and see real-time predictions rendered on screen:
+```bash
+python inference_yolo_22ndapr.py --live
+```
+*(Press 'q' in the camera window to stop).*
+
+### 2. Single Image Inference
+To test a specific image from the terminal:
+```bash
+python inference_yolo_22ndapr.py --image /path/to/your/test_image.jpg
+```
+This will pop up a window showing the image with the label overlay and print the exact confidence percentage in the terminal.
+
+## Pipeline Scripts Included
+
+If you wish to reproduce or expand the dataset, the following utility scripts are included:
+
+- **`extract_fruits_buds.py`**: Uses the SAM3 Promptable Concept Segmentation (PCS) model to automatically segment and crop bounding boxes of plants from raw video frames.
+- **`build_yolo_dataset.py`**: A dataset generator that pulls from multiple source directories (`Segmented_PCS`, `Segmented_Fruits_Buds`, `Segmented_Single_Leaf`). It uses a strict fallback priority to prioritize "Whole Plant" images, filling any deficits with Buds and then Leaves, guaranteeing perfectly balanced classes.
+- **`train_yolo_22ndapr.py`**: The training configuration script used to kick off the YOLOv8 classification training.
